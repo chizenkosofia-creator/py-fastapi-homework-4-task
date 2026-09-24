@@ -1,6 +1,6 @@
 from datetime import date
 
-import status
+from fastapi import status
 from starlette.requests import Request
 from fastapi import (
     APIRouter,
