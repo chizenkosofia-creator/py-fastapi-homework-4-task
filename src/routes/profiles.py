@@ -10,7 +10,6 @@ from fastapi import (
     UploadFile,
     HTTPException,
 )
-from pip._internal import req
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from urllib3.contrib.emscripten import request
@@ -68,7 +67,6 @@ async def create_profile(
     info: str = Form(...),
     avatar: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    settings: BaseAppSettings = Depends(get_settings),
     jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager),
     s3_client: S3StorageInterface = Depends(get_s3_storage_client),
 ):

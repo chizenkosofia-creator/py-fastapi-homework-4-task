@@ -1,7 +1,5 @@
 from datetime import datetime, timezone
 from typing import cast
-from schemas.accounts import PasswordResetCompleteRequestSchema
-import data
 from fastapi import BackgroundTasks, Request
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select, delete
