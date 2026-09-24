@@ -12,7 +12,6 @@ from fastapi import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from urllib3.contrib.emscripten import request
 
 from database import get_db
 from database.models.accounts import UserModel, UserProfileModel, GenderEnum
@@ -31,7 +30,7 @@ from validation import (
 router = APIRouter(prefix="/users", tags=["profiles"])
 
 
-def get_token(request: request) -> str:
+def get_token(request: Request) -> str:
     authorization: str = request.headers.get("Authorization")
 
     if not authorization:
