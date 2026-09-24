@@ -1,4 +1,7 @@
 from datetime import date
+
+import status
+from starlette.requests import Request
 from fastapi import (
     APIRouter,
     Depends,
@@ -6,11 +9,11 @@ from fastapi import (
     File,
     UploadFile,
     HTTPException,
-    Request,
-    status
 )
+from pip._internal import req
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from urllib3.contrib.emscripten import request
 
 from database import get_db
 from database.models.accounts import UserModel, UserProfileModel, GenderEnum
@@ -20,7 +23,6 @@ from config.settings import BaseAppSettings
 from security.interfaces import JWTAuthManagerInterface
 from storages import S3StorageInterface
 from exceptions.security import TokenExpiredError, InvalidTokenError
-from exceptions.storage import StorageUploadError
 from validation import (
     validate_name,
     validate_image,
@@ -31,7 +33,7 @@ from validation import (
 router = APIRouter(prefix="/users", tags=["profiles"])
 
 
-def get_token(request: Request) -> str:
+def get_token(request: request) -> str:
     authorization: str = request.headers.get("Authorization")
 
     if not authorization:
@@ -70,7 +72,6 @@ async def create_profile(
     jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager),
     s3_client: S3StorageInterface = Depends(get_s3_storage_client),
 ):
-    # 1. Токен валідація
     token = get_token(request)
     try:
         payload = jwt_manager.decode_access_token(token)
@@ -82,14 +83,14 @@ async def create_profile(
             detail="Token has expired."
         )
 
-    # 2. Перевірка прав доступу (права редагування)
-    if current_user_id != user_id and user_group != "admin":
+    group_name = user_group.get("name") if isinstance(user_group, dict) else str(user_group)
+
+    if current_user_id != user_id and group_name.lower() != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to edit this profile."
         )
 
-    # 3. Перевірка існування та активності користувача
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
     target_user = result.scalar_one_or_none()
@@ -100,7 +101,6 @@ async def create_profile(
             detail="User not found or not active."
         )
 
-    # 4. Перевірка чи профіль вже існує
     stmt_profile = select(UserProfileModel).where(UserProfileModel.user_id == user_id)
     res_profile = await db.execute(stmt_profile)
     existing_profile = res_profile.scalar_one_or_none()
@@ -111,22 +111,27 @@ async def create_profile(
             detail="User already has a profile."
         )
 
-    # Валідація вхідних даних поля
-    validate_name(first_name)
-    validate_name(last_name)
-    validate_gender(gender)
-    validate_birth_date(date_of_birth)
-    if not info or not info.strip():
+    try:
+        validate_name(first_name)
+        validate_name(last_name)
+        validate_gender(gender)
+        validate_birth_date(date_of_birth)
+        if not info or not info.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Info field cannot be empty or contain only spaces."
+            )
+        validate_image(avatar)
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Info field cannot be empty or contain only spaces."
+            detail=str(e)
         )
-    validate_image(avatar)
 
-    # 5. Завантаження аватарки в S3
     try:
-        file_extension = avatar.filename.split(".")[-1]
-        object_name = f"avatars/{user_id}_avatar.{file_extension}"
+        file_ext = avatar.filename.split(".")[-1] if avatar.filename and "." in avatar.filename else "jpg"
+        object_name = f"avatars/{user_id}_avatar.{file_ext}"
+
         avatar_url = await s3_client.upload_file(
             file=avatar.file,
             object_name=object_name,
@@ -138,7 +143,6 @@ async def create_profile(
             detail="Failed to upload avatar. Please try again later."
         )
 
-    # 6. Створення профілю в БД
     profile = UserProfileModel(
         user_id=user_id,
         first_name=first_name,

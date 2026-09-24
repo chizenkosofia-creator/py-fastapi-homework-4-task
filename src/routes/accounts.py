@@ -1,12 +1,8 @@
 from datetime import datetime, timezone
 from typing import cast
-
+from schemas.accounts import PasswordResetCompleteRequestSchema
 import data
-import request
-from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
-from config.settings import BaseAppSettings
-from config.dependencies import get_settings, get_accounts_email_notificator
-from notifications import EmailSenderInterface
+from fastapi import BackgroundTasks, Request
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
@@ -73,7 +69,7 @@ router = APIRouter()
 )
 async def register_user(
         user_data: UserRegistrationRequestSchema,
-        background_tasks: BackgroundTasks,  # <--- Додайте цей параметр
+        background_tasks: BackgroundTasks,
         request: Request,
         db: AsyncSession = Depends(get_db),
         email_sender: EmailSenderInterface = Depends(get_accounts_email_notificator),
@@ -176,7 +172,7 @@ async def register_user(
     },
 )
 async def activate_account(
-        token: str,
+        activation_data: UserActivationRequestSchema,
         background_tasks: BackgroundTasks,
         request: Request,
         db: AsyncSession = Depends(get_db),
@@ -238,8 +234,6 @@ async def activate_account(
         str(user.email),
         login_link
     )
-
-    return {"message": "Account activated successfully."}
     await db.delete(token_record)
     await db.commit()
 
@@ -276,7 +270,7 @@ async def request_password_reset_token(
     Returns:
         MessageResponseSchema: A success message indicating that instructions will be sent.
     """
-    stmt = select(UserModel).filter_by(email=data.email)
+    stmt = select(UserModel).filter_by(email=reset_data.email)
     result = await db.execute(stmt)
     user = result.scalars().first()
 
@@ -290,14 +284,14 @@ async def request_password_reset_token(
     reset_token = PasswordResetTokenModel(user_id=cast(int, user.id))
     db.add(reset_token)
     await db.commit()
-    return MessageResponseSchema(
-        message="If you are registered, you will receive an email with instructions."
-    )
     reset_link = f"{request.base_url}accounts/reset-password/confirm/?token={reset_token.token}"
     background_tasks.add_task(
         email_sender.send_password_reset_email,
         str(user.email),
         reset_link
+    )
+    return MessageResponseSchema(
+        message="If you are registered, you will receive an email with instructions."
     )
 
 
@@ -345,7 +339,7 @@ async def request_password_reset_token(
     },
 )
 async def reset_password(
-        reset_data: PasswordResetConfirmSchema,
+        data: PasswordResetCompleteRequestSchema,
         background_tasks: BackgroundTasks,
         request: Request,
         db: AsyncSession = Depends(get_db),
@@ -463,7 +457,7 @@ async def login_user(
         login_data: UserLoginRequestSchema,
         db: AsyncSession = Depends(get_db),
         settings: BaseAppSettings = Depends(get_settings),
-        jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager),
+        jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
 ) -> UserLoginResponseSchema:
     """
     Endpoint for user login.
