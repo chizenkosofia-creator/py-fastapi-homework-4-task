@@ -17,8 +17,7 @@ from urllib3.contrib.emscripten import request
 from database import get_db
 from database.models.accounts import UserModel, UserProfileModel, GenderEnum
 from schemas.profiles import ProfileResponseSchema
-from config.dependencies import get_settings, get_jwt_auth_manager, get_s3_storage_client
-from config.settings import BaseAppSettings
+from config.dependencies import get_jwt_auth_manager, get_s3_storage_client
 from security.interfaces import JWTAuthManagerInterface
 from storages import S3StorageInterface
 from exceptions.security import TokenExpiredError, InvalidTokenError
