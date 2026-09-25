@@ -1,7 +1,7 @@
 from datetime import date
 from database.models.accounts import GenderEnum
 from pydantic import BaseModel, ConfigDict, field_validator
-
+from fastapi import UploadFile
 from validation import (
     validate_name,
     validate_gender,
