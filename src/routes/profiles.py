@@ -133,7 +133,7 @@ async def create_profile(
             file_data=file_bytes,
             file_name=object_name,
         )
-        avatar_url = await res if inspect.isawaitable(res) else res
+        avatar_url = f"http://minio-theater/{object_name}"
     except HTTPException:
         raise
     except Exception as e:
