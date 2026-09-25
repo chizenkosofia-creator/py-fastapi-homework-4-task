@@ -103,7 +103,7 @@ async def create_profile(
 
     if existing_profile:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already has a profile."
         )
 
@@ -148,8 +148,8 @@ async def create_profile(
 
     profile = UserProfileModel(
         user_id=user_id,
-        first_name=first_name,
-        last_name=last_name,
+        first_name=first_name.lower(),
+        last_name=last_name.lower(),
         gender=GenderEnum(gender.lower()),
         date_of_birth=date_of_birth,
         info=info,
