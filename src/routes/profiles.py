@@ -128,16 +128,22 @@ async def create_profile(
         file_ext = avatar.filename.split(".")[-1] if avatar.filename and "." in avatar.filename else "jpg"
         object_name = f"avatars/{user_id}_avatar.{file_ext}"
         file_bytes = await avatar.read()
+
         res = s3_client.upload_file(
             file=file_bytes,
             object_name=object_name,
             content_type=avatar.content_type
         )
         avatar_url = await res if inspect.isawaitable(res) else res
-    except Exception:
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Додай логування для дебагу
+        import logging
+        logging.error(f"S3 upload error: {type(e).__name__}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload avatar. Please try again later."
+            detail=f"Failed to upload avatar. Please try again later."
         )
 
     profile = UserProfileModel(
