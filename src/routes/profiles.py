@@ -71,21 +71,22 @@ async def create_profile(
     token = get_token(request)
     try:
         payload = jwt_manager.decode_access_token(token)
-        current_user_id = int(payload.get("user_id"))
-        user_group = payload.get("group")
     except (TokenExpiredError, InvalidTokenError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired."
         )
-
-    group_name = user_group.get("name") if isinstance(user_group, dict) else str(user_group)
-
-    if current_user_id != user_id and group_name.lower() != "admin":
+    current_user_id = int(payload.get("user_id"))
+    stmt = select(UserModel).where(UserModel.id == current_user_id)
+    result = await db.execute(stmt)
+    current_user = result.scalar_one_or_none()
+    is_admin = current_user and current_user.group and current_user.group.name.lower() == "admin"
+    if current_user_id != user_id and not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to edit this profile."
         )
+
 
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)

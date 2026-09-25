@@ -5,7 +5,8 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from validation import (
     validate_name,
     validate_gender,
-    validate_birth_date
+    validate_birth_date,
+    validate_image,
 )
 
 
@@ -15,6 +16,7 @@ class ProfileCreateSchema(BaseModel):
     gender: GenderEnum
     date_of_birth: date
     info: str
+    avatar: UploadFile
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -32,6 +34,12 @@ class ProfileCreateSchema(BaseModel):
     @classmethod
     def check_birth_date(cls, value: date) -> date:
         validate_birth_date(value)
+        return value
+
+    @field_validator("image")
+    @classmethod
+    def check_image(cls, value: UploadFile) -> UploadFile:
+        validate_image(value)
         return value
 
     @field_validator("info")
