@@ -71,7 +71,7 @@ async def create_profile(
     token = get_token(request)
     try:
         payload = jwt_manager.decode_access_token(token)
-        current_user_id = int(payload.get("sub"))
+        current_user_id = int(payload.get("user_id"))
         user_group = payload.get("group")
     except (TokenExpiredError, InvalidTokenError):
         raise HTTPException(
