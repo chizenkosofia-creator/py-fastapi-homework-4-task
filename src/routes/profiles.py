@@ -130,15 +130,13 @@ async def create_profile(
         file_bytes = await avatar.read()
 
         res = s3_client.upload_file(
-            file=file_bytes,
-            object_name=object_name,
-            content_type=avatar.content_type
+            file_data=file_bytes,
+            file_name=object_name,
         )
         avatar_url = await res if inspect.isawaitable(res) else res
     except HTTPException:
         raise
     except Exception as e:
-        # Додай логування для дебагу
         import logging
         logging.error(f"S3 upload error: {type(e).__name__}: {e}")
         raise HTTPException(
