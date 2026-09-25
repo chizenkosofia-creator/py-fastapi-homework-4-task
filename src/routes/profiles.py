@@ -58,18 +58,17 @@ def get_token(request: Request) -> str:
 )
 async def create_profile(
     user_id: int,
-    request: Request,
+    token: str = Depends(get_token),
     first_name: str = Form(...),
     last_name: str = Form(...),
     gender: str = Form(...),
     date_of_birth: date = Form(...),
-    info: str = Form(...),
+    info: str | None = Form(None),
     avatar: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager),
     s3_client: S3StorageInterface = Depends(get_s3_storage_client),
 ):
-    token = get_token(request)
     try:
         payload = jwt_manager.decode_access_token(token)
     except (TokenExpiredError, InvalidTokenError):
@@ -128,9 +127,9 @@ async def create_profile(
     try:
         file_ext = avatar.filename.split(".")[-1] if avatar.filename and "." in avatar.filename else "jpg"
         object_name = f"avatars/{user_id}_avatar.{file_ext}"
-
+        file_bytes = await avatar.read()
         avatar_url = await s3_client.upload_file(
-            file=avatar.file,
+            file=file_bytes,
             object_name=object_name,
             content_type=avatar.content_type
         )
