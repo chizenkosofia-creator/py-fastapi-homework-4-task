@@ -1,4 +1,5 @@
 from datetime import date
+from sqlalchemy.orm import selectinload
 
 from fastapi import status
 from starlette.requests import Request
@@ -77,7 +78,7 @@ async def create_profile(
             detail="Token has expired."
         )
     current_user_id = int(payload.get("user_id"))
-    stmt = select(UserModel).where(UserModel.id == current_user_id)
+    stmt = select(UserModel).where(UserModel.id == current_user_id).options(selectinload(UserModel.group))
     result = await db.execute(stmt)
     current_user = result.scalar_one_or_none()
     is_admin = current_user and current_user.group and current_user.group.name.lower() == "admin"
