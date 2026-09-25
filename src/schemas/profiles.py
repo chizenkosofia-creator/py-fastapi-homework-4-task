@@ -36,7 +36,7 @@ class ProfileCreateSchema(BaseModel):
         validate_birth_date(value)
         return value
 
-    @field_validator("image")
+    @field_validator("avatar")
     @classmethod
     def check_image(cls, value: UploadFile) -> UploadFile:
         validate_image(value)
