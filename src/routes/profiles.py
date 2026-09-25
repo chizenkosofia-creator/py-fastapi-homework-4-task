@@ -104,7 +104,7 @@ async def create_profile(
 
     if existing_profile:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="User already has a profile."
         )
 
@@ -115,13 +115,13 @@ async def create_profile(
         validate_birth_date(date_of_birth)
         if not info or not info.strip():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Info field cannot be empty or contain only spaces."
             )
         validate_image(avatar)
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e)
         )
 
