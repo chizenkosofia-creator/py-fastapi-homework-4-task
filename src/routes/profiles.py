@@ -1,6 +1,6 @@
 from datetime import date
 from sqlalchemy.orm import selectinload
-
+import inspect
 from fastapi import status
 from starlette.requests import Request
 from fastapi import (
@@ -128,11 +128,12 @@ async def create_profile(
         file_ext = avatar.filename.split(".")[-1] if avatar.filename and "." in avatar.filename else "jpg"
         object_name = f"avatars/{user_id}_avatar.{file_ext}"
         file_bytes = await avatar.read()
-        avatar_url = await s3_client.upload_file(
+        res = s3_client.upload_file(
             file=file_bytes,
             object_name=object_name,
             content_type=avatar.content_type
         )
+        avatar_url = await res if inspect.isawaitable(res) else res
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
