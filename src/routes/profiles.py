@@ -87,7 +87,6 @@ async def create_profile(
             detail="You don't have permission to edit this profile."
         )
 
-
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
     target_user = result.scalar_one_or_none()
