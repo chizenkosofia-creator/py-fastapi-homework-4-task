@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +19,7 @@ router = APIRouter()
 
 @router.post(
     path="/users/{user_id}/profile/",
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     response_model=ProfileResponseSchema,
 )
 async def create_user_profile(
@@ -86,9 +88,19 @@ async def create_user_profile(
             detail="You don't have permission to edit this profile.",
         )
 
+    stmt_user = select(UserModel).where(UserModel.id == user_id)
+    user_result = await db.execute(stmt_user)
+    target_user = user_result.scalar()
+
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
     stmt_profile = select(UserProfileModel).where(UserProfileModel.user_id == user_id)
-    result = await db.execute(stmt_profile)
-    existing_profile = result.scalar()
+    profile_result = await db.execute(stmt_profile)
+    existing_profile = profile_result.scalar()
 
     if existing_profile:
         raise HTTPException(
@@ -96,18 +108,19 @@ async def create_user_profile(
             detail="User already has a profile.",
         )
 
-    avatar_key = f"avatars/{user_id}_avatar.jpg"
+    filename = profile_data.avatar.filename or ""
+    ext = os.path.splitext(filename)[1].lower() or ".jpg"
+    avatar_key = f"avatars/{user_id}_avatar{ext}"
     avatar_bytes = await profile_data.avatar.read()
 
     try:
         await s3_client.upload_file(file_name=avatar_key, file_data=avatar_bytes)
+        avatar_url = await s3_client.get_file_url(avatar_key)
     except BaseS3Error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload avatar. Please try again later.",
         )
-
-    avatar_url = await s3_client.get_file_url(avatar_key)
 
     new_profile = UserProfileModel(
         first_name=profile_data.first_name,

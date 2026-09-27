@@ -11,7 +11,7 @@ from config import (
     get_jwt_auth_manager,
     get_settings,
     BaseAppSettings,
-    get_accounts_email_notificator,
+    get_accounts_email_notificator, settings,
 )
 from database import (
     get_db,
@@ -132,7 +132,7 @@ async def register_user(
         ) from e
     else:
         activation_link = (
-            f"http://127.0.0.1/accounts/activate/"
+            f"{settings.BASE_URL}/accounts/activate/"
             f"?email={new_user.email}&token={activation_token.token}"
         )
 
