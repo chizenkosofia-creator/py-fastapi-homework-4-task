@@ -6,7 +6,6 @@ from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-from config.settings import BaseAppSettings
 from config import (
     get_jwt_auth_manager,
     get_settings,
