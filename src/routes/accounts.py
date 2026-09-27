@@ -6,6 +6,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from config.settings import settings
 from config import (
     get_jwt_auth_manager,
     get_settings,
@@ -131,7 +132,7 @@ async def register_user(
         ) from e
     else:
         activation_link = (
-            f"{BaseAppSettings.BASE_URL}/accounts/activate/"
+            f"{settings.BASE_URL}/accounts/activate/"
             f"?email={new_user.email}&token={activation_token.token}"
         )
 
